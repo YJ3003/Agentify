@@ -2,17 +2,23 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+You need to run both the backend (FastAPI) and frontend (Next.js) concurrently.
 
+### 1. Start Backend (FastAPI)
+Open a terminal and run:
+```bash
+# Make sure you are in the root directory
+pip install -r backend/requirements.txt # (First time only)
+uvicorn backend.main:app --reload
+```
+The backend will start at `http://127.0.0.1:8000`.
+
+### 2. Start Frontend (Next.js)
+Open a new terminal tab/window and run:
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
