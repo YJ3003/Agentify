@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 from google import genai
 from google.genai import types
 
@@ -10,137 +11,199 @@ class LLMClient:
         if self.api_key:
             self.client = genai.Client(api_key=self.api_key)
 
-    async def modernize(self, system_description: dict) -> dict:
+    async def _generate_with_retry(self, prompt: str, model: str = 'gemini-2.5-flash', retries: int = 3) -> dict:
+        for attempt in range(retries):
+            try:
+                response = await self.client.aio.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
+                )
+                
+                content = response.text
+                if content.startswith("```json"):
+                    content = content.replace("```json", "").replace("```", "")
+                
+                return json.loads(content)
+                
+            except Exception as e:
+                # Check for 429 or rate limit strings in error
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    wait_time = (2 ** attempt) * 2 + 5 # 7s, 9s, 13s... aggressive wait
+                    print(f"Rate limited on {model}. Waiting {wait_time}s... (Attempt {attempt+1}/{retries})")
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise e
+                    
+        raise Exception("Max retries exceeded for AI generation")
+
+    async def explain_opportunity(self, opportunity: dict, code_slice: str) -> dict:
         """
-        Unified modernization analysis for both Codebase and Workflow inputs.
-        Expects a normalized system_description dictionary.
+        Explain WHY a specific code component was flagged as an agent opportunity.
+        Strictly bounded to the provided code slice.
         """
         if not self.client:
+             return {"error": "AI unavailable"}
+
+        # Construct restricted prompt
+        prompt = f"""
+        You are a Staff Software Engineer analyzing a specific component for refactoring into an AI Agent.
+        
+        CONTEXT:
+        File: {opportunity.get('file')}
+        Function: {opportunity.get('function')}
+        Detected Signals: {', '.join(opportunity.get('signals', []))}
+        
+        CODE SNIPPET:
+        ```python
+        {code_slice}
+        ```
+        
+        TASK:
+        Explain why this specific component is a good candidate for agentification based ONLY on the code and signals provided.
+        Do NOT hallucinate other files. Do NOT suggest generic workflows.
+        
+        OUTPUT FORMAT (JSON):
+        {{
+            "justification": "Concise technical explanation (< 200 chars)",
+            "risk_assessment": "Specific risks in this code (e.g. database locks, external api latency)",
+            "recommended_agent_pattern": "Reasoning Loop / Orchestrator / Tool User"
+        }}
+        """
+        
+        try:
+            return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
+            
+        except Exception as e:
+            print(f"LLM Explanation Error: {e}")
             return {
-                "error": "Missing GEMINI_API_KEY",
-                "framework": "N/A",
-                "reason": "AI analysis unavailable.",
-                "modernization_playbook": {}
+                "justification": "AI explanation failed",
+                "risk_assessment": "Unknown",
+                "recommended_agent_pattern": "Manual Review"
             }
 
+    async def modernize_workflow_text(self, text: str) -> dict:
+        """
+        Generates modernization playbook for text-based workflow descriptions.
+        (Restored functionality for document uploads)
+        """
+        if not self.client:
+            return {"error": "AI unavailable"}
+            
         prompt = f"""
-        You are an expert Principal Software Architect specializing in legacy modernization and AI agentification.
-        Your goal is to provide a comprehensive modernization playbook for the supplied system description.
-
-        SYSTEM CONTEXT:
-        Input Type: {system_description.get("input_type", "unknown")}
-        System Name: {system_description.get("name", "Unnamed System")}
-        Description: {system_description.get("description", "No description provided.")}
+        Analyze this business process workflow and suggest AI agent modernization.
         
-        FULL SYSTEM DATA:
-        {json.dumps(system_description, indent=2)}
-
-        INSTRUCTIONS:
-        1. Analyze the provided system data.
-        2. Treat both Codebase and Workflow inputs as equivalent.
-        3. Use Google Search to ground recommendations.
-        4. Do NOT default to specific frameworks (like CrewAI/LangGraph) unless justified.
-        5. Provide concrete recommendations across ALL 9 categories.
+        WORKFLOW TEXT:
+        {text[:2000]}
         
-        CRITICAL OUTPUT RULES:
-        - "summary" fields MUST be < 120 characters. No prose.
-        - "signals" are short tags (e.g. "High Impact", "Easy Integration").
-        - "details" contains the verbose explanation.
-        - "confidence" is a float 0.0-1.0.
-
-        CATEGORIES:
-        1. Agent Frameworks
-        2. Automation / Workflow Engines
-        3. Enterprise Integration Platforms
-        4. Knowledge + RAG + Retrieval Systems
-        5. Web / Real-Time Grounding Tools
-        6. Developer Tooling / Code Intelligence
-        7. Observability & Runtime
-        8. Runtime / Deployment & Inference Engines
-        9. Workflow Visualization Tools
-
-        OUTPUT FORMAT (JSON ONLY):
+        OUTPUT FORMAT (JSON):
         {{
-            "system_summary": "High-level summary (< 2 sentences)...",
-            "pain_points": ["Critical issue 1 (< 10 words)", "Critical issue 2"],
+            "workflow_summary": "Summary of the process",
+            "modernization_playbook": {{
+                "agent_frameworks": [
+                    {{ "tool": "Framework Name", "summary": "Why this framework", "details": {{ "why": "...", "usage": "..." }} }}
+                ],
+                "workflow_engines": []
+            }},
+            "pain_points": ["List of inefficiencies"],
             "agent_opportunities": [
                 {{
-                    "location": "File or Step Name",
-                    "summary": "Why this needs AI (< 120 chars)",
-                    "signals": ["High Complexity", "Orchestration"],
-                    "recommended_framework": "Framework Name",
+                    "location": "Step in process",
+                    "summary": "Agent application here",
+                    "recommended_framework": "Orchestrator"
+                }}
+            ]
+        }}
+        """
+        
+        try:
+            return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
+        except Exception as e:
+            print(f"Workflow Modernization Error: {e}")
+            return {"error": str(e)}
+
+    async def generate_playbook(self, repo_context: str) -> dict:
+        """
+        Generates a modernization playbook based on a holistic view of the repository.
+        """
+        if not self.client:
+            return {"error": "AI unavailable"}
+            
+        prompt = f"""
+        You are a Staff Principal Software Architect specializing in Legacy Modernization and Agentic AI.
+        
+        TASK:
+        Analyze the provided repository context (File Tree, Dependencies, and Heuristic Signals) to deduce the actual business workflow and recommend a concrete Agentic Modernization Architecture.
+        
+        REPOSITORY CONTEXT:
+        {repo_context[:50000]} 
+        
+        OBJECTIVES:
+        1. **Deduce the Workflow**: What does this application actually do? (e.g. "A Triage App that uploads photos to Firebase and uses Gemini for analysis").
+        2. **Filter Noise**: The heuristic scanner may have flagged UI components or utilities as "agents". IGNORE THEM unless they contain critical business logic. Focus on the CORE WORKFLOW.
+        3. **Architect the Solution**: Recommend specific agents for the core parts of the workflow.
+        
+        OUTPUT FORMAT (JSON):
+        {{
+            "system_summary": "Concise (2 sentences) summary of what the system does and its architecture.",
+            "pain_points": [
+                "**Architectural Pain Point 1**: Explanation...",
+                "**Architectural Pain Point 2**: Explanation..."
+            ],
+            "agent_opportunities": [
+                {{
+                    "location": "File :: Function",
+                    "summary": "Brief explanation of what this agent would do",
+                    "recommended_framework": "Orchestration Agent" | "Reasoning & Planning Agent" | "Tool Use Agent",
                     "confidence": 0.9,
                     "details": {{
-                        "reasoning": "Detailed explanation...",
-                        "implementation_tips": "How to implement..."
+                        "reasoning": "Why this is a good candidate (e.g. 'Central logic hub', 'Complex decision tree')",
+                        "risk_assessment": "Potential challenges (e.g. 'State management', 'External API latency')"
                     }}
                 }}
             ],
-            "suggested_architecture": "Description of the proposed agentic architecture...",
             "modernization_playbook": {{
-                "agent_frameworks": [ 
-                    {{
-                        "tool": "Name", 
-                        "confidence": 0.9,
-                        "summary": "Why this tool (< 120 chars)",
-                        "signals": ["Python-native", "Graph-based"],
-                        "details": {{
-                            "why": "Detailed justification...",
-                            "usage": "Specific usage pattern...",
-                            "tradeoffs": "Pros/cons..."
-                        }}
-                    }} 
+                "agent_frameworks": [
+                    {{ 
+                        "tool": "LangGraph" | "CrewAI" | "PydanticAI" | "LangChain", 
+                        "confidence": 0.9, 
+                        "summary": "Why this tool fits this specific repo",
+                        "signals": ["Stateful Workflow", "Complex Decomposition", "Type Safety"],
+                        "details": {{ "why": "...", "usage": "...", "tradeoffs": "..." }}
+                    }}
                 ],
-                "workflow_engines": [], 
-                "integration_platforms": [],
-                "rag_retrieval": [],
-                "grounding_tools": [],
-                "dev_tools": [],
-                "observability": [],
-                "runtime_inference": [],
-                "visualization_tools": []
+                "observability": [
+                    {{
+                        "tool": "Arize Phoenix" | "LangSmith",
+                        "confidence": 0.8,
+                        "summary": "Tracing recommendation",
+                        "signals": ["External I/O"],
+                        "details": {{ "why": "...", "usage": "...", "tradeoffs": "..." }}
+                    }}
+                ]
             }}
         }}
         """
-
+        
         try:
-            # Enable Google Search grounding
-            tools = [types.Tool(google_search=types.GoogleSearch())]
+            return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
             
-            response = await self.client.aio.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    tools=tools
-                )
-            )
-            
-            print("----- GROUNDING METADATA (MODERNIZE) -----")
-            if response.candidates and response.candidates[0].grounding_metadata:
-                 print(response.candidates[0].grounding_metadata)
-            else:
-                 print("No grounding metadata found.")
-            print("------------------------------------------")
-            
-            content = response.text
-             # Clean up potential markdown formatting
-            if content.startswith("```json"):
-                content = content.replace("```json", "").replace("```", "")
-            elif content.startswith("```"):
-                content = content.replace("```", "")
-                
-            result = json.loads(content)
-            # Normalize summary key for compatibility
-            if "system_summary" in result:
-                result["workflow_summary"] = result["system_summary"]
-            return result
         except Exception as e:
-            print(f"LLM Error: {e}")
-            return {
-                "error": str(e),
-                "system_summary": "Analysis Generation Failed",
-                "pain_points": ["The AI model failed to generate a valid structured response."],
-                "agent_opportunities": [],
-                "suggested_architecture": "We encountered an error while processing the AI response. This usually happens when the model generates invalid JSON. Please try analyzing the document again.",
-                "modernization_playbook": {}
-            }
+            print(f"Playbook Generation Error: {e}")
+            return {"error": str(e)}
+
+    async def modernize(self, system_description: dict) -> dict:
+        """
+        DEPRECATED: Legacy method. 
+        Retained for interface compatibility but should not be primary logic.
+        """
+        return {
+            "modernization_playbook": {
+                "agent_frameworks": [],
+                "workflow_engines": []
+            },
+            "agent_opportunities": [] 
+        }

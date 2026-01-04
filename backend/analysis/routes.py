@@ -79,3 +79,20 @@ async def get_report(report_id: str, uid: str = Depends(verify_token)):
         
     with open(report_path, 'r') as f:
         return json.load(f)
+
+@router.delete("/{report_id}")
+async def delete_report(report_id: str, uid: str = Depends(verify_token)):
+    from backend.auth.user_manager import user_manager
+    user_dir = user_manager._get_user_dir(uid)
+    
+    # 1. Delete the analysis report
+    report_path = os.path.join(user_dir, "reports", f"{report_id}.json")
+    if os.path.exists(report_path):
+        os.remove(report_path)
+    
+    # 2. Delete the modernization output (if any)
+    ai_path = os.path.join(user_dir, "modernization", "repo", f"{report_id}.json")
+    if os.path.exists(ai_path):
+        os.remove(ai_path)
+        
+    return {"status": "deleted", "id": report_id}

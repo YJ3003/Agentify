@@ -41,6 +41,12 @@ export function SiteHeader() {
             >
               Saved Reports
             </Link>
+            <Link
+              href="/dashboard/tools"
+               className="text-foreground/60 transition-colors hover:text-foreground"
+            >
+              Tool Library
+            </Link>
           </nav>
         </div>
         

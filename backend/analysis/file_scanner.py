@@ -4,7 +4,7 @@ from typing import List
 class FileScanner:
     def __init__(self, repo_path: str):
         self.repo_path = repo_path
-        self.supported_extensions = {'.py', '.ts', '.js'}
+        self.supported_extensions = {'.py', '.ts', '.js', '.jsx', '.tsx', '.go', '.java'}
         self.ignore_dirs = {'node_modules', '.git', '__pycache__', 'dist', 'build', 'venv', 'env'}
 
     def scan(self) -> List[str]:

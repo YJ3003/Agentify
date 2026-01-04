@@ -122,6 +122,20 @@ export async function modernizeRepo(reportId: string, token: string) {
     return res.json();
 }
 
+export async function getModernizationRecommendation(reportId: string, token: string) {
+    const res = await fetch(`${API_URL}/modernize/repo/${reportId}`, {
+        headers: {
+             "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if (!res.ok) {
+        if (res.status === 404) return null; // Not found is fine, just means not generated yet
+        throw new Error("Failed to fetch modernization recommendation");
+    }
+    return res.json();
+}
+
 export async function uploadWorkflow(file: File | null, text: string | null, token: string) {
     const formData = new FormData();
     if (file) formData.append("file", file);
@@ -178,6 +192,32 @@ export async function getWorkflowReports(token: string) {
 
     if (!res.ok) {
         throw new Error("Failed to fetch workflow reports");
+    }
+    return res.json();
+}
+
+export async function deleteReport(id: string, token: string) {
+    const res = await fetch(`${API_URL}/analysis/${id}`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    if (!res.ok) {
+        throw new Error("Failed to delete report");
+    }
+    return res.json();
+}
+
+export async function deleteWorkflowReport(id: string, token: string) {
+    const res = await fetch(`${API_URL}/modernize/workflow/${id}`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    if (!res.ok) {
+        throw new Error("Failed to delete workflow report");
     }
     return res.json();
 }

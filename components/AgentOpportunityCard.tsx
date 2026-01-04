@@ -28,7 +28,16 @@ export function AgentOpportunityCard({ opp }: AgentOpportunityProps) {
     const [expanded, setExpanded] = useState(false)
 
     // Normalize data
-    const title = opp.location || opp.step || opp.file || "Unknown Location"
+    const rawTitle = opp.location || opp.step || opp.file || "Unknown Location"
+    let displayTitle = rawTitle
+    let displaySubtitle = ""
+
+    if (rawTitle.includes("::")) {
+        const parts = rawTitle.split("::")
+        displaySubtitle = parts[0].trim()
+        displayTitle = parts[1].trim()
+    }
+
     const framework = opp.recommended_framework || (opp.candidate_frameworks ? opp.candidate_frameworks[0] : "N/A")
     const summary = opp.summary || opp.reason || "No summary provided."
     const reasoning = opp.details?.reasoning || opp.reason || "" // Fallback if detail not strictly structured
@@ -39,16 +48,17 @@ export function AgentOpportunityCard({ opp }: AgentOpportunityProps) {
             <CardHeader className="p-4 pb-2">
                 <div className="flex justify-between items-start gap-4">
                     <div className="space-y-1">
-                        <CardTitle className="text-base font-semibold break-words">
-                            {title}
+                        <CardTitle className="text-base font-semibold break-words flex flex-col">
+                            <span>{displayTitle}</span>
+                            {displaySubtitle && <span className="text-xs font-normal text-muted-foreground mt-0.5">{displaySubtitle}</span>}
                         </CardTitle>
-                         <div className="flex flex-wrap gap-2 items-center">
-                            <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+                         <div className="flex flex-wrap gap-2 items-center mt-2">
+                            <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-200">
                                 {framework}
                             </Badge>
                             {opp.confidence && (
                                 <span className="text-xs text-muted-foreground font-medium">
-                                    {(opp.confidence * 100).toFixed(0)}% Confidence
+                                    {(opp.confidence * 100).toFixed(0)}% Match
                                 </span>
                             )}
                         </div>
@@ -58,16 +68,6 @@ export function AgentOpportunityCard({ opp }: AgentOpportunityProps) {
             <CardContent className="p-4 pt-2">
                 <p className="text-sm text-foreground/90 mb-3">{summary}</p>
                 
-                {signals.length > 0 && (
-                     <div className="flex flex-wrap gap-1.5 mb-3">
-                        {signals.map((sig, i) => (
-                             <Badge key={i} variant="outline" className="text-[10px] h-5 px-1.5">
-                                {sig}
-                            </Badge>
-                        ))}
-                     </div>
-                )}
-
                 <div className="flex justify-start">
                      <Button 
                         variant="ghost" 
@@ -75,19 +75,32 @@ export function AgentOpportunityCard({ opp }: AgentOpportunityProps) {
                         onClick={() => setExpanded(!expanded)}
                         className="h-6 px-0 text-xs text-muted-foreground hover:text-indigo-500"
                     >
-                        {expanded ? "Hide Explanation" : "View Explanation"}
+                        {expanded ? "Hide Details" : "View Technical Details"}
                         {expanded ? <ChevronUp className="ml-1 w-3 h-3" /> : <ChevronDown className="ml-1 w-3 h-3" />}
                      </Button>
                 </div>
 
                 {expanded && (
-                    <div className="mt-3 pt-3 border-t border-dashed">
+                    <div className="mt-3 pt-3 border-t border-dashed space-y-3">
+                         {signals.length > 0 && (
+                             <div className="space-y-1">
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Detected Signals</span>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {signals.map((sig, i) => (
+                                         <Badge key={i} variant="outline" className="text-[10px] h-5 px-1.5 font-mono">
+                                            {sig.replace("external_io_dependencies:", "I/O:").replace("orchestration_naming_pattern", "Orchestrator Pattern")}
+                                        </Badge>
+                                    ))}
+                                </div>
+                             </div>
+                        )}
+                    
                         <div className="text-xs text-muted-foreground prose dark:prose-invert max-w-none">
                             <ReactMarkdown>{reasoning}</ReactMarkdown>
                         </div>
                         {opp.details?.implementation_tips && (
-                             <div className="mt-2 bg-muted/50 p-2 rounded text-xs">
-                                <span className="font-semibold block mb-1">Implementation Tip:</span>
+                             <div className="mt-2 bg-muted/50 p-2 rounded text-xs border">
+                                <span className="font-semibold block mb-1 text-primary">💡 Implementation Tip</span>
                                 {opp.details.implementation_tips}
                              </div>
                         )}

@@ -31,8 +31,10 @@
 # =========================
 data/
 repos/
-reports/
+backend/data/reports/
 workflows/
+backend/data/
+backend/repos/
 modernization/repo/
 
 # =========================

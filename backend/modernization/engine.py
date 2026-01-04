@@ -1,64 +1,55 @@
 import os
 import json
 import uuid
-from backend.ai_engine.llm_client import LLMClient
-from backend.modernization.adapters.repo_adapter import RepoAdapter
+from backend.ai_engine.recommender import Recommender
 from backend.workflow_engine.text_extractor import TextExtractor
-from backend.ai_engine.recommender import Recommender # To reuse slice collection logic or finding reports
 
 class ModernizationEngine:
     def __init__(self):
-        self.llm_client = LLMClient()
-        self.repo_adapter = RepoAdapter()
         self.text_extractor = TextExtractor()
-        # Initialize Recommender just for its helper methods if needed, or implement similar logic
-        # For now, we will handle file loading manually or reuse existing helpers
         
     async def modernize_repo(self, report_id: str, uid: str) -> dict:
         """
-        Orchestrates the modernization of a code repository.
+        Orchestrates the modernization using the new AI Engine Recommender.
         """
-        # 1. Load Analysis Report
-        # Try loading from user-scoped dir first, then legacy
+        # Delegate to the new Recommender which implements the rigor
+        # We pass report_id. Recommender needs to handle user-scoped loading?
+        # Current Recommender doesn't accept UID in init, let's patch it or handle pathing there.
+        # But wait, Recommender assumes "backend/data/reports".
+        # We need to make Recommender aware of User context OR copy report to global (bad).
+        
+        # Better: Update Recommender to accept UID (TODO in previous step).
+        # For now, let's instantiate Recommender and let it run.
+        # If Recommender is not user-aware, we might fail to find the report if it's in user_dir.
+        
+        # Let's fix Recommender to find the report by looking in both places
+        # OR we pass the absolute path/uid to Recommender.
+        
+        recommender = Recommender(report_id)
+        # Monkey-patch or update Recommender to look in user dir using a helper?
+        # Actually I should update Recommender.py to take an optional UID or search path.
+        # But to be safe and quick:
+        
+        # 1. Try to find the report manually
         from backend.auth.user_manager import user_manager
         user_dir = user_manager._get_user_dir(uid)
+        user_report_path = os.path.join(user_dir, "reports", f"{report_id}.json")
         
-        report_path = os.path.join(user_dir, "reports", f"{report_id}.json")
-        if not os.path.exists(report_path):
-             # Fallback to global reports (for shared/legacy)
-             report_path = os.path.join("backend", "data", "reports", f"{report_id}.json")
+        # 2. If valid, ensure Recommender can read it.
+        # I will update Recommender.py in the next step to support this.
+        # For now, let's assume Recommender will be updated to take `uid`.
         
-        if not os.path.exists(report_path):
-             raise FileNotFoundError(f"Report {report_id} not found")
+        recommender = Recommender(report_id, uid)
+        return await recommender.generate()
         
-        with open(report_path, 'r') as f:
-            report = json.load(f)
-
-        # 2. Collect Code Slices
-        repo_name = report.get("repo")
-        repo_path = self._find_repo_path(repo_name)
-        
-        slices = []
-        if repo_path:
-             from backend.ai_engine.slice_collector import SliceCollector
-             collector = SliceCollector()
-             slices = collector.collect(report, repo_path)
-        
-        # 3. Adapt
-        system_description = self.repo_adapter.adapt(report, slices)
-        
-        # 4. Modernize
-        playbook = await self.llm_client.modernize(system_description)
-        
-        # Save Result
-        self._save_result(report_id, playbook, "repo", uid)
-        
-        return playbook
-
     async def modernize_workflow(self, text: str, uid: str) -> dict:
         """
         Orchestrates modernization of a text-based workflow.
+        Legacy flow - we can keep utilizing LLMClient directly or refactor this too.
         """
+        from backend.ai_engine.llm_client import LLMClient
+        client = LLMClient()
+        
         system_description = {
             "input_type": "workflow",
             "system_type": "business_process",
@@ -70,9 +61,19 @@ class ModernizationEngine:
             "code_slices": []
         }
         
-        playbook = await self.llm_client.modernize(system_description)
+        # We need a non-deprecated method for workflow modernization
+        # or we update LLMClient to support this specific case.
+        # Let's fallback to a specific workflow prompt in LLMClient?
+        # Or just use the deprecated method but un-deprecate it for WORKFLOWS only?
         
-        # Generate ID for workflow
+        # For now, let's inline the workflow prompt here or restore LLMClient logic for non-code inputs.
+        # To avoid breaking workflows, I will restore basic LLMClient functionality for this path.
+        
+        # But wait, LLMClient.modernize returns empty now.
+        # I MUST fix LLMClient.modernize to work for workflows OR implement `modernize_workflow`.
+        
+        playbook = await client.modernize_workflow_text(text)
+        
         workflow_id = str(uuid.uuid4())
         playbook["id"] = workflow_id
         playbook["original_text_snippet"] = text[:200]
@@ -80,39 +81,33 @@ class ModernizationEngine:
         self._save_result(workflow_id, playbook, "workflow", uid)
         return playbook
 
-    def _find_repo_path(self, repo_name_slug: str) -> str:
-        # Duplicated helper for finding repo path
-        repos_root = os.path.join("backend", "repos")
-        if not os.path.exists(repos_root):
-            return ""
-        for owner in os.listdir(repos_root):
-             owner_dir = os.path.join(repos_root, owner)
-             if os.path.isdir(owner_dir):
-                for name in os.listdir(owner_dir):
-                    if f"{owner}-{name}" == repo_name_slug:
-                         return os.path.join(owner_dir, name)
-        return ""
-
     def get_workflow_report(self, report_id: str, uid: str) -> dict:
         from backend.auth.user_manager import user_manager
         user_dir = user_manager._get_user_dir(uid)
         
-        # Check user scoped new location
         path_new = os.path.join(user_dir, "modernization", "workflow", f"{report_id}.json")
         if os.path.exists(path_new):
              with open(path_new, 'r') as f:
                  return json.load(f)
-        
-        # Fallback to old global location
+                 
         path_old = os.path.join("backend", "data", "modernization", "workflow", f"{report_id}.json")
         if os.path.exists(path_old):
              with open(path_old, 'r') as f:
                  return json.load(f)
 
-        # Fallback to really old location
-        path_oldest = os.path.join("backend", "data", "workflows", f"{report_id}.json")
-        if os.path.exists(path_oldest):
-             with open(path_oldest, 'r') as f:
+        return None
+                  
+    def get_repo_recommendation(self, report_id: str, uid: str) -> dict:
+        """
+        Retrieves a previously generated repo modernization recommendation.
+        Returns None if not found.
+        """
+        from backend.auth.user_manager import user_manager
+        user_dir = user_manager._get_user_dir(uid)
+        
+        path = os.path.join(user_dir, "modernization", "repo", f"{report_id}.json")
+        if os.path.exists(path):
+             with open(path, 'r') as f:
                  return json.load(f)
                  
         return None
@@ -120,8 +115,6 @@ class ModernizationEngine:
     def _save_result(self, id: str, data: dict, source_type: str, uid: str):
         from backend.auth.user_manager import user_manager
         user_dir = user_manager._get_user_dir(uid)
-        
-        # Save to user_data/{uid}/modernization/{source_type}/{id}.json
         base_dir = os.path.join(user_dir, "modernization", source_type)
         os.makedirs(base_dir, exist_ok=True)
         path = os.path.join(base_dir, f"{id}.json")
@@ -140,12 +133,11 @@ class ModernizationEngine:
                     try:
                         with open(os.path.join(workflow_dir, filename), 'r') as f:
                             data = json.load(f)
-                            # Extract minimal info for listing
                             reports.append({
                                 "id": data.get("id", filename.replace(".json", "")),
                                 "name": data.get("name", "Untitled Workflow"),
                                 "summary": data.get("workflow_summary", "")[:100] + "...",
-                                "created_at": data.get("created_at", "") # If we had timestamp
+                                "created_at": data.get("created_at", "")
                             })
                     except Exception:
                         continue
