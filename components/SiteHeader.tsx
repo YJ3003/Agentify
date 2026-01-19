@@ -11,18 +11,16 @@ export function SiteHeader() {
 
   if (!user) return null;
 
-  // Don't show header on landing page
   if (pathname === "/") return null;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center px-4">
+      <div className="flex h-14 w-full items-center px-4 md:px-8">
         <div className="mr-4 flex">
           <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
             <span className="font-bold sm:inline-block">Agentify</span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-
              <Link
               href="/dashboard/repos"
               className="text-foreground/60 transition-colors hover:text-foreground"
@@ -50,11 +48,10 @@ export function SiteHeader() {
           </nav>
         </div>
         
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <div className="flex flex-1 items-center justify-end">
            <UserNav />
         </div>
       </div>
     </header>
   );
 }
-

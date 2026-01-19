@@ -48,7 +48,7 @@ export default function WorkflowResultPage({ params }: { params: Promise<{ id: s
       </Link>
       
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tighter">Workflow Analysis</h1>
+        <h1 className="text-3xl font-bold tracking-tighter bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent w-fit">Workflow Analysis</h1>
         <p className="text-muted-foreground">AI-driven insights for agentifying your process.</p>
       </div>
 

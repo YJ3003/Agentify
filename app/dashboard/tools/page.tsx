@@ -39,19 +39,13 @@ export default function ToolsLibraryPage() {
 
     return (
         <div className="container mx-auto py-10 px-4 max-w-7xl space-y-8">
-            <Link href="/dashboard">
-                <Button variant="ghost" className="mb-4 pl-0">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-                </Button>
-            </Link>
-
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-2">
                     <h1 className="text-4xl font-bold tracking-tighter bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                         AI Tool Library
                     </h1>
                     <p className="text-muted-foreground text-lg">
-                        Discover {TOOLS.length}+ curated tools for modernization, automation, and productivity.
+                        Discover {TOOLS.length}+ curated tools for agentification, automation, and productivity.
                     </p>
                 </div>
             </div>

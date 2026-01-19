@@ -46,7 +46,7 @@ export default function WorkflowUploadPage() {
     <div className="container max-w-2xl mx-auto py-20 px-4">
       <div className="space-y-6">
         <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-bold tracking-tighter">Analyze Your Workflow</h1>
+            <h1 className="text-3xl font-bold tracking-tighter bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent w-fit mx-auto">Analyze Your Workflow</h1>
             <p className="text-muted-foreground">Upload a document or paste your process description to get AI-powered agent recommendations.</p>
         </div>
 

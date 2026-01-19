@@ -125,62 +125,118 @@ class LLMClient:
             print(f"Workflow Modernization Error: {e}")
             return {"error": str(e)}
 
+    def _load_tool_library(self) -> str:
+        """
+        Dynamically reads the project's own tool library from lib/tools.ts.
+        Parses TypeScript content and filters for relevant tools (Developers & Automation)
+        to avoid flooding the context with irrelevant consumer apps.
+        """
+        try:
+            # Resolve path to lib/tools.ts relative to this file
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            tools_path = os.path.join(base_dir, "lib", "tools.ts")
+            
+            if not os.path.exists(tools_path):
+                return "No local tool library found."
+
+            with open(tools_path, 'r') as f:
+                content = f.read()
+
+            # Simple regex parser to extract relevant fields from the TS object structure
+            # Looking for patterns like: name: "X", category: "Y", description: "Z"
+            import re
+            tools = []
+            
+            # Find all object blocks inside the TOOLS array
+            matches = re.finditer(r'{\s*name:\s*"(.*?)",\s*category:\s*"(.*?)",.*?description:\s*"(.*?)",', content, re.DOTALL)
+            
+            # Categories considered relevant for "Agentic Workflow Modernization"
+            RELEVANT_CATEGORIES = {"Developers", "Automation"}
+            
+            for m in matches:
+                name = m.group(1)
+                category = m.group(2)
+                desc = m.group(3)
+                
+                if category in RELEVANT_CATEGORIES:
+                    tools.append(f"- {name} ({category}): {desc}")
+                
+            if not tools:
+                return "Tool library detected but no relevant tools found."
+                
+            return "=== RELEVANT PROJECT TOOLS (Developers & Automation) ===\n" + "\n".join(tools[:50]) # Limit to top 50 relevant ones
+            
+        except Exception as e:
+            print(f"Error loading tool library: {e}")
+            return "Error loading tool library."
+
     async def generate_playbook(self, repo_context: str) -> dict:
         """
         Generates a modernization playbook based on a holistic view of the repository.
         """
         if not self.client:
             return {"error": "AI unavailable"}
+
+        # Load the dynamic tool library
+        tool_library_str = self._load_tool_library()
             
         prompt = f"""
-        You are a Staff Principal Software Architect specializing in Legacy Modernization and Agentic AI.
+        You are a Staff Principal Software Architect specializing in AI Agent Workflows and Legacy Modernization.
         
         TASK:
-        Analyze the provided repository context (File Tree, Dependencies, and Heuristic Signals) to deduce the actual business workflow and recommend a concrete Agentic Modernization Architecture.
+        Analyze the provided repository context to identify **where and how the workflow can be changed to make use of AI and AI Agents**.
+        
+        Your goal is NOT just to "sprinkle AI" on existing code, but to reimagine the business process as an Agentic Workflow.
+        Think about:
+        - Which human decisions can be offloaded to Reasoning Agents?
+        - Which manual orchestrations can be handled by State Machines or Agents?
+        - Where can data intake be automated by Tool Uses?
         
         REPOSITORY CONTEXT:
         {repo_context[:50000]} 
         
+        {tool_library_str}
+        
         OBJECTIVES:
-        1. **Deduce the Workflow**: What does this application actually do? (e.g. "A Triage App that uploads photos to Firebase and uses Gemini for analysis").
-        2. **Filter Noise**: The heuristic scanner may have flagged UI components or utilities as "agents". IGNORE THEM unless they contain critical business logic. Focus on the CORE WORKFLOW.
-        3. **Architect the Solution**: Recommend specific agents for the core parts of the workflow.
+        1. **Workflow Discovery**: Deduce the underlying business goal. What is the user trying to achieve?
+        2. **Agentic Transformation**: Identify concrete opportunities to replace imperative logic with Agentic reasoning or orchestration.
+        3. **Flexible Architecture**: Recommend the *right* architecture for the problem using tools from the Project Tool Library where appropriate.
         
         OUTPUT FORMAT (JSON):
         {{
-            "system_summary": "Concise (2 sentences) summary of what the system does and its architecture.",
+            "system_summary": "Concise summary of the system's purpose and your proposed agentic transformation.",
             "pain_points": [
-                "**Architectural Pain Point 1**: Explanation...",
-                "**Architectural Pain Point 2**: Explanation..."
+                "**Workflow Bottleneck**: Explanation of a manual or rigid process...",
+                "**Hidden Complexity**: Explanation of logic that is better suited for an LLM..."
             ],
             "agent_opportunities": [
                 {{
-                    "location": "File :: Function",
-                    "summary": "Brief explanation of what this agent would do",
-                    "recommended_framework": "Orchestration Agent" | "Reasoning & Planning Agent" | "Tool Use Agent",
-                    "confidence": 0.9,
+                    "location": "File :: Function (or Logical Area)",
+                    "summary": "High-level description of the agent's role",
+                    "recommended_framework": "Generic pattern name (e.g. 'Orchestrator', 'Researcher', 'Planner')",
+                    "confidence": 0.8-1.0,
                     "details": {{
-                        "reasoning": "Why this is a good candidate (e.g. 'Central logic hub', 'Complex decision tree')",
-                        "risk_assessment": "Potential challenges (e.g. 'State management', 'External API latency')"
+                        "reasoning": "Why this workflow step needs an agent.",
+                        "risk_assessment": "Implementation challenges."
                     }}
                 }}
             ],
             "modernization_playbook": {{
                 "agent_frameworks": [
                     {{ 
-                        "tool": "LangGraph" | "CrewAI" | "PydanticAI" | "LangChain", 
+                        "tool": "Tool Name from Library (or best fit)", 
                         "confidence": 0.9, 
-                        "summary": "Why this tool fits this specific repo",
-                        "signals": ["Stateful Workflow", "Complex Decomposition", "Type Safety"],
-                        "details": {{ "why": "...", "usage": "...", "tradeoffs": "..." }}
+                        "summary": "How this tool enables the new workflow",
+                        "signals": ["Signal 1", "Signal 2"],
+                        "details": {{ "why": "Technical justification...", "usage": "Implementation strategy...", "tradeoffs": "..." }}
                     }}
                 ],
                 "observability": [
                     {{
-                        "tool": "Arize Phoenix" | "LangSmith",
+                        "tool": "Tool Name",
                         "confidence": 0.8,
-                        "summary": "Tracing recommendation",
-                        "signals": ["External I/O"],
+                        "summary": "Why this is needed",
+                        "signals": ["Signal"],
                         "details": {{ "why": "...", "usage": "...", "tradeoffs": "..." }}
                     }}
                 ]

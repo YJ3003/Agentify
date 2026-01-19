@@ -115,7 +115,7 @@ export function ModernizationPlaybook({ playbook }: ModernizationPlaybookProps) 
     <Card className="border-indigo-500/20 bg-indigo-500/5 dark:bg-indigo-500/10 mt-8">
       <CardHeader>
         <CardTitle className="text-xl flex items-center gap-2">
-            Modernization Playbook
+            Agentification Playbook
         </CardTitle>
         <p className="text-sm text-muted-foreground">Comprehensive recommendations grounded in latest tools and standards.</p>
       </CardHeader>

@@ -72,8 +72,8 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Saved Reports</h1>
-        <p className="text-muted-foreground">View and manage your past modernization analysis.</p>
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent w-fit">Saved Reports</h1>
+        <p className="text-muted-foreground">View and manage your past agentification analysis.</p>
       </div>
       
       <Tabs defaultValue="repos" className="w-full">

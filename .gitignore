@@ -30,7 +30,6 @@
 # Runtime / User-generated Data (CRITICAL)
 # =========================
 data/
-repos/
 backend/data/reports/
 workflows/
 backend/data/

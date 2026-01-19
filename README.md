@@ -1,42 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+<div align="center">
+  <h1>Agentify</h1>
+  <p><b>Intelligent Code Modernization & Analysis Engine</b></p>
+  
+  <a href="https://nextjs.org">
+    <img src="https://img.shields.io/badge/Next.js_16-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+  </a>
+  <a href="https://react.dev">
+    <img src="https://img.shields.io/badge/React_19-20232a?style=for-the-badge&logo=react&logoColor=61dafb" alt="React" />
+  </a>
+  <a href="https://fastapi.tiangolo.com">
+    <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi" alt="FastAPI" />
+  </a>
+  <a href="https://python.org">
+    <img src="https://img.shields.io/badge/Python_3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  </a>
 
-You need to run both the backend (FastAPI) and frontend (Next.js) concurrently.
+</div>
 
-### 1. Start Backend (FastAPI)
-Open a terminal and run:
+<br />
+
+## ⚡ Overview
+
+**Agentify** is an advanced modernization engine designed to transform legacy codebases into intelligent, agentic systems. By combining static code analysis (`AST`, `CFG`, `Dependency Graphs`) with Generative AI, Agentify generates actionable "Playbooks" to refract monolithic logic into scalable, agent-based workflows.
+
+It's not just a linter—it's a **blueprint generator for the AI era**.
+
+## ✨ Key Features
+
+- **🔍 Deep Static Analysis**: Automatically scans repositories to calculate cyclomatic complexity, map dependencies, and identify tightly coupled modules.
+- **🤖 AI-Powered Recommendations**: Uses LLMs (`Gemini`/`OpenAI`) to analyze code slices and suggest specific modernization strategies (e.g., "Refactor this manager class into a LangGraph node").
+- **📊 Interactive Dashboard**: Visualizes system health, complexity hotspots, and modernization progress in a sleek, real-time UI.
+- **🛡️ Secure & Private**: Runs locally with user-scoped data storage.
+
+## 🛠 Tech Stack
+
+### Frontend
+- **Framework**: Next.js 16 (App Router)
+- **UI Context**: React 19
+- **Styling**: TailwindCSS v4 + `shadcn/ui`
+- **Visualization**: Lucide Icons, Recharts
+
+### Backend
+- **Core**: FastAPI (Python)
+- **Analysis**: `ast`, `networkx` (Dependency Graphs)
+- **AI Engine**: Custom `LLMClient` & `SliceCollector`
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 20+
+- Python 3.10+
+- Pip & Npm
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/agentify.git
+   cd agentify
+   ```
+
+2. **Setup Backend**
+   ```bash
+   # Create virtual environment (optional but recommended)
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+   # Install dependencies
+   pip install -r backend/requirements.txt
+   ```
+
+3. **Setup Frontend**
+   ```bash
+   npm install
+   ```
+
+### Running the App
+
+Run both services concurrently:
+
+**Terminal 1 (Backend)**
 ```bash
-# Make sure you are in the root directory
-pip install -r backend/requirements.txt # (First time only)
 uvicorn backend.main:app --reload
 ```
-The backend will start at `http://127.0.0.1:8000`.
 
-### 2. Start Frontend (Next.js)
-Open a new terminal tab/window and run:
+**Terminal 2 (Frontend)**
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Visit `http://localhost:3000` to start modernizing your code.

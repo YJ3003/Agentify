@@ -80,7 +80,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     <TooltipProvider>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">{report.repo}</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent w-fit">{report.repo}</h1>
         <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground mr-1">Total Complexity:</span>
             <Badge variant="outline" className="text-base px-3 py-1">{report.summary.total_complexity}</Badge>
@@ -98,7 +98,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
       <div className="flex justify-end">
          <Button onClick={handleGenerateAI} disabled={generating || recommendation} className="gap-2">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {recommendation ? "Playbook Generated" : "Generate Modernization Playbook"}
+            {recommendation ? "Workflow Agentified" : "Agentify Workflow"}
          </Button>
       </div>
 
@@ -134,7 +134,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-indigo-500" />
-                    AI Modernization Playbook
+                    AI Agentification Playbook
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -220,7 +220,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             <div className="space-y-4 opacity-60 hover:opacity-100 transition-opacity">
                 <div className="flex items-center justify-between">
                      <h2 className="text-xl font-semibold flex items-center gap-2"><Lightbulb className="w-5 h-5" /> Potential Candidates</h2>
-                     <span className="text-xs text-muted-foreground">Generate Playbook to see full details</span>
+                     <span className="text-xs text-muted-foreground">Agentify Workflow to see full details</span>
                 </div>
                
                 {report.agent_opportunities.map((opp: any, i: number) => (

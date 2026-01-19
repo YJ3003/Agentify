@@ -15,8 +15,10 @@ export default function Dashboard() {
         <ProtectedRoute>
             <div className="container mx-auto py-10 px-4 max-w-6xl">
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome back, {user?.displayName || "User"}</h1>
-                    <p className="text-muted-foreground">Manage your modernization projects.</p>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent w-fit">
+                        Welcome back, {user?.displayName || "User"}
+                    </h1>
+                    <p className="text-muted-foreground">Manage your agentification projects.</p>
                 </div>
 
                 {!user?.providerData.some(p => p.providerId === 'github.com') && (
@@ -75,7 +77,7 @@ export default function Dashboard() {
                         <CardContent>
                              <div className="text-2xl font-bold">History</div>
                              <p className="text-xs text-muted-foreground">
-                                View past modernization playbooks.
+                                View past agentification playbooks.
                             </p>
                              <Button className="mt-4 w-full" variant="outline" size="sm">View All</Button>
                         </CardContent>
@@ -91,7 +93,7 @@ export default function Dashboard() {
                         <CardContent>
                              <div className="text-2xl font-bold">AI Tools</div>
                              <p className="text-xs text-muted-foreground">
-                                Explore 50+ curated AI tools.
+                                Explore 136+ curated AI tools.
                             </p>
                              <Button className="mt-4 w-full" variant="outline" size="sm">Explore Library</Button>
                         </CardContent>
