@@ -3,6 +3,7 @@ import json
 import asyncio
 from google import genai
 from google.genai import types
+from backend.ai_engine import prompts
 
 class LLMClient:
     def __init__(self):
@@ -48,31 +49,8 @@ class LLMClient:
         if not self.client:
              return {"error": "AI unavailable"}
 
-        # Construct restricted prompt
-        prompt = f"""
-        You are a Staff Software Engineer analyzing a specific component for refactoring into an AI Agent.
-        
-        CONTEXT:
-        File: {opportunity.get('file')}
-        Function: {opportunity.get('function')}
-        Detected Signals: {', '.join(opportunity.get('signals', []))}
-        
-        CODE SNIPPET:
-        ```python
-        {code_slice}
-        ```
-        
-        TASK:
-        Explain why this specific component is a good candidate for agentification based ONLY on the code and signals provided.
-        Do NOT hallucinate other files. Do NOT suggest generic workflows.
-        
-        OUTPUT FORMAT (JSON):
-        {{
-            "justification": "Concise technical explanation (< 200 chars)",
-            "risk_assessment": "Specific risks in this code (e.g. database locks, external api latency)",
-            "recommended_agent_pattern": "Reasoning Loop / Orchestrator / Tool User"
-        }}
-        """
+        # Construct restricted prompt using the new prompts module
+        prompt = prompts.get_explain_opportunity_prompt(opportunity, code_slice)
         
         try:
             return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
@@ -93,31 +71,7 @@ class LLMClient:
         if not self.client:
             return {"error": "AI unavailable"}
             
-        prompt = f"""
-        Analyze this business process workflow and suggest AI agent modernization.
-        
-        WORKFLOW TEXT:
-        {text[:2000]}
-        
-        OUTPUT FORMAT (JSON):
-        {{
-            "workflow_summary": "Summary of the process",
-            "modernization_playbook": {{
-                "agent_frameworks": [
-                    {{ "tool": "Framework Name", "summary": "Why this framework", "details": {{ "why": "...", "usage": "..." }} }}
-                ],
-                "workflow_engines": []
-            }},
-            "pain_points": ["List of inefficiencies"],
-            "agent_opportunities": [
-                {{
-                    "location": "Step in process",
-                    "summary": "Agent application here",
-                    "recommended_framework": "Orchestrator"
-                }}
-            ]
-        }}
-        """
+        prompt = prompts.get_modernize_workflow_prompt(text)
         
         try:
             return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
@@ -180,69 +134,7 @@ class LLMClient:
         # Load the dynamic tool library
         tool_library_str = self._load_tool_library()
             
-        prompt = f"""
-        You are a Staff Principal Software Architect specializing in AI Agent Workflows and Legacy Modernization.
-        
-        TASK:
-        Analyze the provided repository context to identify **where and how the workflow can be changed to make use of AI and AI Agents**.
-        
-        Your goal is NOT just to "sprinkle AI" on existing code, but to reimagine the business process as an Agentic Workflow.
-        Think about:
-        - Which human decisions can be offloaded to Reasoning Agents?
-        - Which manual orchestrations can be handled by State Machines or Agents?
-        - Where can data intake be automated by Tool Uses?
-        
-        REPOSITORY CONTEXT:
-        {repo_context[:50000]} 
-        
-        {tool_library_str}
-        
-        OBJECTIVES:
-        1. **Workflow Discovery**: Deduce the underlying business goal. What is the user trying to achieve?
-        2. **Agentic Transformation**: Identify concrete opportunities to replace imperative logic with Agentic reasoning or orchestration.
-        3. **Flexible Architecture**: Recommend the *right* architecture for the problem using tools from the Project Tool Library where appropriate.
-        
-        OUTPUT FORMAT (JSON):
-        {{
-            "system_summary": "Concise summary of the system's purpose and your proposed agentic transformation.",
-            "pain_points": [
-                "**Workflow Bottleneck**: Explanation of a manual or rigid process...",
-                "**Hidden Complexity**: Explanation of logic that is better suited for an LLM..."
-            ],
-            "agent_opportunities": [
-                {{
-                    "location": "File :: Function (or Logical Area)",
-                    "summary": "High-level description of the agent's role",
-                    "recommended_framework": "Generic pattern name (e.g. 'Orchestrator', 'Researcher', 'Planner')",
-                    "confidence": 0.8-1.0,
-                    "details": {{
-                        "reasoning": "Why this workflow step needs an agent.",
-                        "risk_assessment": "Implementation challenges."
-                    }}
-                }}
-            ],
-            "modernization_playbook": {{
-                "agent_frameworks": [
-                    {{ 
-                        "tool": "Tool Name from Library (or best fit)", 
-                        "confidence": 0.9, 
-                        "summary": "How this tool enables the new workflow",
-                        "signals": ["Signal 1", "Signal 2"],
-                        "details": {{ "why": "Technical justification...", "usage": "Implementation strategy...", "tradeoffs": "..." }}
-                    }}
-                ],
-                "observability": [
-                    {{
-                        "tool": "Tool Name",
-                        "confidence": 0.8,
-                        "summary": "Why this is needed",
-                        "signals": ["Signal"],
-                        "details": {{ "why": "...", "usage": "...", "tradeoffs": "..." }}
-                    }}
-                ]
-            }}
-        }}
-        """
+        prompt = prompts.get_playbook_generation_prompt(repo_context, tool_library_str)
         
         try:
             return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
