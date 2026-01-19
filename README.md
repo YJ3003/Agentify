@@ -53,28 +53,69 @@ It's not just a linter—it's a **blueprint generator for the AI era**.
 - Python 3.10+
 - Pip & Npm
 
+### Prerequisites - Detailed
+Before you begin, you will need to acquire a few keys:
+
+1.  **Google Gemini API Key**:
+    *   Visit [Google AI Studio](https://aistudio.google.com/).
+    *   Create a new API Key for `Gemini 2.5 Flash`.
+    *   Save this for your `.env` file.
+
+2.  **Firebase Project**:
+    *   Go to [Firebase Console](https://console.firebase.google.com/).
+    *   Create a project.
+    *   **Auth**: Enable "GitHub" sign-in method in Authentication settings.
+    *   **Service Account**: Go to *Project Settings* -> *Service Accounts*.
+    *   Click **"Generate new private key"**.
+    *   Rename the downloaded file to `firebase_service_account.json` and move it to the `backend/` directory.
+
+3.  **GitHub OAuth App**:
+    *   Go to GitHub -> Settings -> Developer Settings -> OAuth Apps.
+    *   Create a new App.
+    *   **Homepage URL**: `http://localhost:3000`
+    *   **Callback URL**: `http://localhost:3000/auth/callback`
+    *   Copy the `Client ID` and `Client Secret` (Client Secret is only needed if you want to verify on backend, mainly Client ID for frontend).
+
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/agentify.git
-   cd agentify
-   ```
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/yourusername/agentify.git
+    cd agentify
+    ```
 
-2. **Setup Backend**
-   ```bash
-   # Create virtual environment (optional but recommended)
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+2.  **Setup Environment Variables**
+    ```bash
+    cp .env.example .env
+    ```
+    Open `.env` and fill in the values:
 
-   # Install dependencies
-   pip install -r backend/requirements.txt
-   ```
+    | Variable | Description | Where to find it |
+    | :--- | :--- | :--- |
+    | `GEMINI_API_KEY` | Google AI Key | Google AI Studio |
+    | `GITHUB_CLIENT_ID` | OAuth Client ID | GitHub Developer Settings |
+    | `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase Config | Firebase Console (Project Settings) |
+    | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Config | Firebase Console |
+    | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase Config | Firebase Console |
+    | `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase Config | Firebase Console |
 
-3. **Setup Frontend**
-   ```bash
-   npm install
-   ```
+3.  **Setup Backend**
+    ```bash
+    # Create virtual environment
+    python3 -m venv venv
+    source venv/bin/activate  # Windows: venv\\Scripts\\activate
+
+    # Install dependencies
+    pip install -r backend/requirements.txt
+    
+    # IMPORTANT: Ensure your service account key is in place
+    # backend/firebase_service_account.json
+    ```
+
+4.  **Setup Frontend**
+    ```bash
+    npm install
+    ```
 
 ### Running the App
 

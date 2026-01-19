@@ -69,12 +69,15 @@ def get_playbook_generation_prompt(repo_context: str, tool_library_str: str) -> 
         
         {tool_library_str}
         
+        
         OBJECTIVES:
         1. **Workflow Discovery**: Deduce the underlying business goal. What is the user trying to achieve?
         2. **Agentic Transformation**: Identify concrete opportunities to replace imperative logic with Agentic reasoning or orchestration.
         3. **Flexible Architecture**: Recommend the *right* architecture for the problem using tools from the Project Tool Library where appropriate.
         
         OUTPUT FORMAT (JSON):
+        Ensure your response is valid JSON. Do not include markdown formatting (like ```json).
+        
         {{
             "system_summary": "Concise summary of the system's purpose and your proposed agentic transformation.",
             "pain_points": [
@@ -86,7 +89,7 @@ def get_playbook_generation_prompt(repo_context: str, tool_library_str: str) -> 
                     "location": "File :: Function (or Logical Area)",
                     "summary": "High-level description of the agent's role",
                     "recommended_framework": "Generic pattern name (e.g. 'Orchestrator', 'Researcher', 'Planner')",
-                    "confidence": 0.8-1.0,
+                    "confidence": 0.8,
                     "details": {{
                         "reasoning": "Why this workflow step needs an agent.",
                         "risk_assessment": "Implementation challenges."

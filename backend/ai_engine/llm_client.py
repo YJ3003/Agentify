@@ -24,11 +24,31 @@ class LLMClient:
                 )
                 
                 content = response.text
-                if content.startswith("```json"):
-                    content = content.replace("```json", "").replace("```", "")
                 
+                # Robustly extract JSON if wrapped in markdown code blocks
+                import re
+                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+                if json_match:
+                    content = json_match.group(1)
+                else:
+                    # Cleanup strictly if startswith (legacy fallback) but avoid naive replace checks
+                    content = content.strip()
+                    if content.startswith("```json"):
+                        content = content[7:]
+                    if content.startswith("```"):
+                        content = content[3:]
+                    if content.endswith("```"):
+                        content = content[:-3]
+                    content = content.strip()
+
                 return json.loads(content)
                 
+            except json.JSONDecodeError as e:
+                print(f"JSON Parsing Failed on attempt {attempt+1}. Error: {e}")
+                print(f"Raw Content Snippet: {content[:500]}...") # Print first 500 chars for debug
+                if attempt == retries - 1:
+                    raise e
+                    
             except Exception as e:
                 # Check for 429 or rate limit strings in error
                 error_str = str(e)
