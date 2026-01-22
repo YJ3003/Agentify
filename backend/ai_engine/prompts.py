@@ -73,10 +73,15 @@ def get_playbook_generation_prompt(repo_context: str, tool_library_str: str) -> 
         OBJECTIVES:
         1. **Workflow Discovery**: Deduce the underlying business goal. What is the user trying to achieve?
         2. **Agentic Transformation**: Identify concrete opportunities to replace imperative logic with Agentic reasoning or orchestration.
-        3. **Flexible Architecture**: Recommend the *right* architecture for the problem using tools from the Project Tool Library where appropriate.
+        3. **Flexible Architecture**: Recommend the *right* architecture for the problem.
+           - Start with the provided Project Tool Library.
+           - **CRITICAL**: You have access to Google Search. If the provided library is insufficient or out of date, SEARCH for the best modern tools matching the user's technology stack.
         
         OUTPUT FORMAT (JSON):
-        Ensure your response is valid JSON. Do not include markdown formatting (like ```json).
+        Your output must be a SINGLE valid JSON object.
+        - Do NOT include markdown formatting (like ```json).
+        - Do NOT include any text before or after the JSON.
+        - If you used Search, incorporate the findings into the `details` fields of the JSON, do NOT output raw search results or citations.
         
         {{
             "system_summary": "Concise summary of the system's purpose and your proposed agentic transformation.",
@@ -99,7 +104,7 @@ def get_playbook_generation_prompt(repo_context: str, tool_library_str: str) -> 
             "modernization_playbook": {{
                 "agent_frameworks": [
                     {{ 
-                        "tool": "Tool Name from Library (or best fit)", 
+                        "tool": "Tool Name (from Library or Search)", 
                         "confidence": 0.9, 
                         "summary": "How this tool enables the new workflow",
                         "signals": ["Signal 1", "Signal 2"],

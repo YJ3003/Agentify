@@ -12,14 +12,20 @@ class LLMClient:
         if self.api_key:
             self.client = genai.Client(api_key=self.api_key)
 
-    async def _generate_with_retry(self, prompt: str, model: str = 'gemini-2.5-flash', retries: int = 3) -> dict:
+    async def _generate_with_retry(self, prompt: str, model: str = 'gemini-2.5-flash', retries: int = 3, use_search: bool = False) -> dict:
         for attempt in range(retries):
             try:
+                # Configure tools if search is enabled
+                tools = []
+                if use_search:
+                    tools.append(types.Tool(google_search=types.GoogleSearch()))
+
                 response = await self.client.aio.models.generate_content(
                     model=model,
                     contents=prompt,
                     config=types.GenerateContentConfig(
-                        response_mime_type="application/json"
+                        response_mime_type="application/json" if not tools else None,
+                        tools=tools if tools else None
                     )
                 )
                 
@@ -73,7 +79,7 @@ class LLMClient:
         prompt = prompts.get_explain_opportunity_prompt(opportunity, code_slice)
         
         try:
-            return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
+            return await self._generate_with_retry(prompt, model='gemini-2.5-flash', use_search=False)
             
         except Exception as e:
             print(f"LLM Explanation Error: {e}")
@@ -94,7 +100,7 @@ class LLMClient:
         prompt = prompts.get_modernize_workflow_prompt(text)
         
         try:
-            return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
+            return await self._generate_with_retry(prompt, model='gemini-2.5-flash', use_search=True)
         except Exception as e:
             print(f"Workflow Modernization Error: {e}")
             return {"error": str(e)}
@@ -157,7 +163,7 @@ class LLMClient:
         prompt = prompts.get_playbook_generation_prompt(repo_context, tool_library_str)
         
         try:
-            return await self._generate_with_retry(prompt, model='gemini-2.5-flash')
+            return await self._generate_with_retry(prompt, model='gemini-2.5-flash', use_search=True)
             
         except Exception as e:
             print(f"Playbook Generation Error: {e}")
