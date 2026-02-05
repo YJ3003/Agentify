@@ -21,7 +21,9 @@ async def sync_github_token(
         raise HTTPException(status_code=400, detail="Missing github_access_token")
         
     try:
+        print(f"DEBUG: Syncing GitHub token for UID: {uid}")
         user_manager.save_github_token(uid, request.github_access_token)
+        print("DEBUG: GitHub token saved successfully")
         return {"status": "synced"}
     except Exception as e:
         print(f"Failed to sync GitHub token: {e}")

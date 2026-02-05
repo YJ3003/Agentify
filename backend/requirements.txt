@@ -3,7 +3,7 @@ uvicorn
 python-dotenv
 httpx
 gitpython
-google-generativeai
+google-genai
 pypdf
 python-docx
 python-multipart

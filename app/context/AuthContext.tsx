@@ -59,19 +59,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGithub = async () => {
     try {
+        console.log("Starting GitHub Sign In...");
         // Force account selection/re-authentication
         githubProvider.setCustomParameters({ prompt: 'select_account' });
         githubProvider.addScope('repo');
         const result = await signInWithPopup(auth, githubProvider);
+        console.log("Firebase Popup Finished", result.user.uid);
+        
         const credential = GithubAuthProvider.credentialFromResult(result);
         const token = credential?.accessToken;
         const user = result.user;
         const idToken = await user.getIdToken();
         
+        console.log("GitHub Access Token present?", !!token);
+        
         if (token) {
+            console.log("Syncing GitHub token with backend...");
             // Import dynamically or assume it's available
             const api = await import("@/lib/api");
             await api.syncGithubToken(token, idToken);
+            console.log("GitHub token synced successfully.");
+        } else {
+            console.error("No GitHub access token returned from credential.");
         }
     } catch (error) {
         console.error("Error signing in with GitHub", error);
